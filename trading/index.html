@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TradeOS — DSA Trading System</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #0a0c0f;
+  --bg2:      #111318;
+  --bg3:      #181c23;
+  --border:   #1e2430;
+  --border2:  #2a3040;
+  --text:     #c8d0e0;
+  --muted:    #4a5568;
+  --green:    #00d68f;
+  --green2:   #00a86b;
+  --red:      #ff4d6a;
+  --red2:     #cc2244;
+  --amber:    #f59e0b;
+  --blue:     #3b9eff;
+  --blue2:    #1a6fd4;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-sans: 'IBM Plex Sans', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-sans); font-size: 13px; min-height: 100vh; overflow-x: hidden; }
+
+/* ── Scanline overlay ── */
+body::before { content:''; position:fixed; inset:0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px); pointer-events:none; z-index:9999; }
+
+/* ── Header ── */
+header { display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:48px; border-bottom:1px solid var(--border); background:var(--bg2); position:sticky; top:0; z-index:100; }
+.logo { font-family:var(--font-mono); font-size:15px; font-weight:600; color:#fff; letter-spacing:-0.5px; }
+.logo span { color:var(--green); }
+.header-right { display:flex; align-items:center; gap:16px; }
+.status-dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.status-text { font-family:var(--font-mono); font-size:11px; color:var(--muted); }
+.cash-display { font-family:var(--font-mono); font-size:13px; color:var(--amber); background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); padding:4px 10px; border-radius:4px; }
+
+/* ── Layout ── */
+.layout { display:grid; grid-template-columns:220px 1fr 280px; grid-template-rows:auto 1fr; gap:1px; background:var(--border); height:calc(100vh - 48px); overflow:hidden; }
+.panel { background:var(--bg2); overflow:hidden; display:flex; flex-direction:column; }
+.panel-header { padding:10px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.panel-title { font-family:var(--font-mono); font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+.panel-body { flex:1; overflow-y:auto; padding:10px; }
+.panel-body::-webkit-scrollbar { width:3px; }
+.panel-body::-webkit-scrollbar-track { background:transparent; }
+.panel-body::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+/* ── Ticker sidebar ── */
+.ticker-item { display:flex; justify-content:space-between; align-items:center; padding:10px 10px; border-radius:6px; cursor:pointer; transition:background 0.15s; border:1px solid transparent; margin-bottom:3px; }
+.ticker-item:hover { background:var(--bg3); }
+.ticker-item.active { background:var(--bg3); border-color:var(--border2); }
+.ticker-sym { font-family:var(--font-mono); font-weight:600; font-size:13px; color:#fff; }
+.ticker-price { font-family:var(--font-mono); font-size:13px; }
+.ticker-chg { font-family:var(--font-mono); font-size:10px; }
+.up { color:var(--green); }
+.dn { color:var(--red); }
+
+/* ── Main center area ── */
+.main-area { grid-column:2; display:flex; flex-direction:column; gap:1px; background:var(--border); overflow:hidden; }
+.chart-panel { background:var(--bg2); padding:14px 16px; flex-shrink:0; }
+.chart-header { display:flex; align-items:baseline; gap:12px; margin-bottom:10px; }
+.chart-ticker { font-family:var(--font-mono); font-size:22px; font-weight:600; color:#fff; }
+.chart-price { font-family:var(--font-mono); font-size:22px; font-weight:400; }
+.chart-change { font-family:var(--font-mono); font-size:13px; padding:2px 8px; border-radius:3px; }
+.chart-change.up { background:rgba(0,214,143,0.1); color:var(--green); }
+.chart-change.dn { background:rgba(255,77,106,0.1); color:var(--red); }
+canvas#chart { width:100%; height:120px; display:block; }
+
+/* ── Order book ── */
+.ob-panel { background:var(--bg2); flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.ob-body { flex:1; overflow:hidden; padding:8px 10px; display:grid; grid-template-rows:1fr auto 1fr; gap:4px; }
+.ob-section { overflow:hidden; }
+.ob-col-header { display:grid; grid-template-columns:1fr 1fr 1fr; font-family:var(--font-mono); font-size:9px; color:var(--muted); padding:2px 4px; text-transform:uppercase; letter-spacing:0.5px; }
+.ob-row { display:grid; grid-template-columns:1fr 1fr 1fr; font-family:var(--font-mono); font-size:11px; padding:3px 4px; border-radius:3px; position:relative; overflow:hidden; cursor:default; }
+.ob-row .fill-bar { position:absolute; top:0; bottom:0; right:0; opacity:0.12; border-radius:3px; }
+.ob-ask .fill-bar { background:var(--red); }
+.ob-bid .fill-bar { background:var(--green); }
+.ob-ask { color:var(--red); }
+.ob-bid { color:var(--green); }
+.ob-spread-row { display:flex; justify-content:center; align-items:center; gap:8px; font-family:var(--font-mono); font-size:10px; color:var(--muted); padding:4px; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+.spread-val { color:var(--amber); }
+
+/* ── Order form ── */
+.order-panel { background:var(--bg2); display:flex; flex-direction:column; overflow:hidden; }
+.order-tabs { display:flex; border-bottom:1px solid var(--border); flex-shrink:0; }
+.order-tab { flex:1; padding:10px; font-family:var(--font-mono); font-size:11px; font-weight:600; text-align:center; cursor:pointer; color:var(--muted); transition:all 0.15s; border-bottom:2px solid transparent; }
+.order-tab.buy.active { color:var(--green); border-color:var(--green); background:rgba(0,214,143,0.04); }
+.order-tab.sell.active { color:var(--red); border-color:var(--red); background:rgba(255,77,106,0.04); }
+.order-tab:hover { background:var(--bg3); }
+.order-form { padding:14px; flex:1; display:flex; flex-direction:column; gap:10px; }
+.form-group { display:flex; flex-direction:column; gap:5px; }
+.form-label { font-family:var(--font-mono); font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; }
+.form-input { background:var(--bg3); border:1px solid var(--border2); color:#fff; padding:8px 10px; border-radius:4px; font-family:var(--font-mono); font-size:13px; width:100%; transition:border-color 0.15s; outline:none; }
+.form-input:focus { border-color:var(--blue); }
+.form-select { background:var(--bg3); border:1px solid var(--border2); color:#fff; padding:8px 10px; border-radius:4px; font-family:var(--font-mono); font-size:12px; width:100%; outline:none; cursor:pointer; }
+.hint { font-size:10px; color:var(--muted); font-family:var(--font-mono); }
+.order-summary { background:var(--bg3); border:1px solid var(--border); border-radius:4px; padding:8px 10px; font-family:var(--font-mono); font-size:11px; }
+.order-summary-row { display:flex; justify-content:space-between; padding:2px 0; }
+.order-summary-row span:last-child { color:#fff; }
+.btn-order { width:100%; padding:11px; border:none; border-radius:5px; font-family:var(--font-mono); font-size:13px; font-weight:600; cursor:pointer; letter-spacing:0.5px; transition:all 0.15s; }
+.btn-buy  { background:var(--green2); color:#000; }
+.btn-sell { background:var(--red2); color:#fff; }
+.btn-buy:hover  { background:var(--green); }
+.btn-sell:hover { background:var(--red); }
+.btn-order:active { transform:scale(0.98); }
+.toast { padding:8px 12px; border-radius:4px; font-family:var(--font-mono); font-size:11px; margin-top:4px; display:none; }
+.toast.success { background:rgba(0,214,143,0.1); border:1px solid rgba(0,214,143,0.3); color:var(--green); display:block; }
+.toast.error   { background:rgba(255,77,106,0.1); border:1px solid rgba(255,77,106,0.3); color:var(--red); display:block; }
+.toast.pending { background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); color:var(--amber); display:block; }
+
+/* ── Portfolio ── */
+.port-stat { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px; }
+.stat-box { background:var(--bg3); border:1px solid var(--border); border-radius:5px; padding:8px 10px; }
+.stat-label { font-family:var(--font-mono); font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:3px; }
+.stat-val   { font-family:var(--font-mono); font-size:14px; font-weight:500; color:#fff; }
+.holding-row { display:flex; justify-content:space-between; align-items:center; padding:8px 8px; border-radius:4px; margin-bottom:3px; background:var(--bg3); border:1px solid var(--border); }
+.holding-ticker { font-family:var(--font-mono); font-weight:600; font-size:12px; color:#fff; }
+.holding-detail { font-family:var(--font-mono); font-size:10px; color:var(--muted); }
+.holding-pnl { font-family:var(--font-mono); font-size:11px; text-align:right; }
+
+/* ── Trade log ── */
+.log-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-radius:3px; margin-bottom:2px; font-family:var(--font-mono); font-size:10px; border-left:2px solid transparent; }
+.log-buy     { background:rgba(0,214,143,0.04); border-left-color:var(--green2); }
+.log-sell    { background:rgba(255,77,106,0.04); border-left-color:var(--red2); }
+.log-pending { background:rgba(245,158,11,0.04); border-left-color:var(--amber); color:var(--muted); }
+.log-new { animation: flashIn 0.5s ease-out; }
+@keyframes flashIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+
+/* ── Bottom row ── */
+.bottom-row { display:flex; gap:1px; background:var(--border); flex-shrink:0; height:200px; }
+.bottom-panel { background:var(--bg2); flex:1; display:flex; flex-direction:column; overflow:hidden; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Trade<span>OS</span> <span style="font-size:10px;color:var(--muted);font-weight:400">// DSA Engine</span></div>
+  <div class="header-right">
+    <div class="status-dot"></div>
+    <span class="status-text" id="api-status">CONNECTING...</span>
+    <div class="cash-display" id="header-cash">₹ --,---</div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ── LEFT: Ticker list ── -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Watchlist</span>
+      <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">HashMap O(1)</span>
+    </div>
+    <div class="panel-body" id="ticker-list"></div>
+  </div>
+
+  <!-- ── CENTER: Chart + Order Book ── -->
+  <div class="main-area">
+    <div class="chart-panel">
+      <div class="chart-header">
+        <span class="chart-ticker" id="chart-ticker">AAPL</span>
+        <span class="chart-price up" id="chart-price">---.--</span>
+        <span class="chart-change up" id="chart-change">+0.00%</span>
+        <span style="margin-left:auto;font-family:var(--font-mono);font-size:9px;color:var(--muted)">CircularBuffer · 60 ticks</span>
+      </div>
+      <canvas id="chart"></canvas>
+    </div>
+
+    <div class="ob-panel">
+      <div class="panel-header">
+        <span class="panel-title">Order Book — <span id="ob-ticker">AAPL</span></span>
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">MaxHeap bids · MinHeap asks</span>
+      </div>
+      <div class="ob-body">
+        <div class="ob-section" id="asks-section"></div>
+        <div class="ob-spread-row">
+          Spread <span class="spread-val" id="spread-val">--</span>
+          &nbsp;·&nbsp; Mid <span class="spread-val" id="mid-val">--</span>
+        </div>
+        <div class="ob-section" id="bids-section"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: Order form + Portfolio ── -->
+  <div style="display:flex;flex-direction:column;gap:1px;background:var(--border);overflow:hidden;">
+
+    <!-- Order form -->
+    <div class="order-panel" style="flex:0 0 auto;">
+      <div class="order-tabs">
+        <div class="order-tab buy active" id="tab-buy" onclick="setTab('BUY')">BUY</div>
+        <div class="order-tab sell" id="tab-sell" onclick="setTab('SELL')">SELL</div>
+      </div>
+      <div class="order-form">
+        <div class="form-group">
+          <label class="form-label">Ticker</label>
+          <select class="form-select" id="order-ticker" onchange="updateSummary()">
+            <option>AAPL</option><option>TSLA</option><option>GOOGL</option><option>INFY</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Price</label>
+          <input class="form-input" id="order-price" type="number" value="0" min="0" step="0.5" oninput="updateSummary()"/>
+          <span class="hint">0 = market order</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quantity</label>
+          <input class="form-input" id="order-qty" type="number" value="10" min="1" max="10000" oninput="updateSummary()"/>
+        </div>
+        <div class="order-summary" id="order-summary">
+          <div class="order-summary-row"><span>Est. cost</span><span id="sum-cost">--</span></div>
+          <div class="order-summary-row"><span>Cash after</span><span id="sum-after">--</span></div>
+        </div>
+        <button class="btn-order btn-buy" id="btn-submit" onclick="submitOrder()">BUY AAPL</button>
+        <div class="toast" id="toast"></div>
+      </div>
+    </div>
+
+    <!-- Portfolio -->
+    <div class="panel" style="flex:1;">
+      <div class="panel-header">
+        <span class="panel-title">Portfolio</span>
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">HashMap</span>
+      </div>
+      <div class="panel-body">
+        <div class="port-stat" id="port-stats"></div>
+        <div id="holdings-list"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── BOTTOM: Trade log spans full width ── -->
+  <div style="grid-column:1/-1;background:var(--bg2);border-top:1px solid var(--border);height:160px;display:flex;flex-direction:column;overflow:hidden;">
+    <div class="panel-header">
+      <span class="panel-title">Execution log</span>
+      <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">FIFO Queue · last 20</span>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:6px 12px;display:flex;flex-direction:column-reverse;" id="trade-log"></div>
+  </div>
+
+</div>
+
+<script>
+const API = 'http://127.0.0.1:8000';
+let activeTicker = 'AAPL';
+let activeSide   = 'BUY';
+let prices       = {};
+let cashBalance  = 50000;
+let lastLogCount = 0;
+
+// ── Fetch helpers ──────────────────────────────────────────────────────────
+async function get(path) {
+  const r = await fetch(API + path);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function post(path, body) {
+  const r = await fetch(API + path, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.detail || 'Error');
+  return data;
+}
+
+// ── Ticker list ────────────────────────────────────────────────────────────
+async function refreshTickers() {
+  try {
+    const data = await get('/tickers');
+    prices = data.prices;
+    const el = document.getElementById('ticker-list');
+    el.innerHTML = data.tickers.map(t => {
+      const p   = data.prices[t] || 0;
+      const pnl = ((p - {AAPL:182,TSLA:245,GOOGL:175,INFY:19.5}[t]) /
+                    {AAPL:182,TSLA:245,GOOGL:175,INFY:19.5}[t] * 100);
+      const cls = pnl >= 0 ? 'up' : 'dn';
+      const sign = pnl >= 0 ? '+' : '';
+      return `<div class="ticker-item${t===activeTicker?' active':''}" onclick="selectTicker('${t}')">
+        <div>
+          <div class="ticker-sym">${t}</div>
+          <div class="ticker-chg ${cls}">${sign}${pnl.toFixed(2)}%</div>
+        </div>
+        <div class="ticker-price ${cls}">₹${p.toFixed(2)}</div>
+      </div>`;
+    }).join('');
+    document.getElementById('api-status').textContent = 'LIVE';
+  } catch(e) {
+    document.getElementById('api-status').textContent = 'API OFFLINE';
+  }
+}
+
+// ── Price chart ────────────────────────────────────────────────────────────
+async function refreshChart() {
+  try {
+    const data = await get(`/snapshot/${activeTicker}`);
+    const p     = data.last_price || 0;
+    const chg   = data.change     || 0;
+    const pct   = data.change_pct || 0;
+    const sign  = chg >= 0 ? '+' : '';
+    const cls   = chg >= 0 ? 'up' : 'dn';
+
+    document.getElementById('chart-ticker').textContent = activeTicker;
+    document.getElementById('chart-price').textContent  = `₹${p.toFixed(2)}`;
+    document.getElementById('chart-price').className    = `chart-price ${cls}`;
+    document.getElementById('chart-change').textContent = `${sign}${chg.toFixed(2)} (${sign}${pct.toFixed(2)}%)`;
+    document.getElementById('chart-change').className   = `chart-change ${cls}`;
+
+    drawChart(data.history || [], chg >= 0);
+  } catch(e) {}
+}
+
+function drawChart(history, isUp) {
+  const canvas = document.getElementById('chart');
+  const ctx    = canvas.getContext('2d');
+  const dpr    = window.devicePixelRatio || 1;
+  const W      = canvas.parentElement.offsetWidth - 32;
+  const H      = 120;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+
+  if (!history || history.length < 2) return;
+  const mn = Math.min(...history) * 0.9995;
+  const mx = Math.max(...history) * 1.0005;
+  const rng = mx - mn || 1;
+  const color = isUp ? '#00d68f' : '#ff4d6a';
+  const fillColor = isUp ? 'rgba(0,214,143,0.08)' : 'rgba(255,77,106,0.08)';
+
+  const pts = history.map((v, i) => ({
+    x: (i / (history.length - 1)) * (W - 4) + 2,
+    y: H - 8 - ((v - mn) / rng) * (H - 16)
+  }));
+
+  ctx.clearRect(0, 0, W, H);
+
+  // grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 0.5;
+  [0.25, 0.5, 0.75].forEach(f => {
+    ctx.beginPath(); ctx.moveTo(0, H * f); ctx.lineTo(W, H * f); ctx.stroke();
+  });
+
+  // fill
+  ctx.beginPath();
+  pts.forEach((p,i) => i === 0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+  ctx.lineTo(pts[pts.length-1].x, H);
+  ctx.lineTo(pts[0].x, H);
+  ctx.closePath();
+  ctx.fillStyle = fillColor;
+  ctx.fill();
+
+  // line
+  ctx.beginPath();
+  pts.forEach((p,i) => i === 0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // last dot
+  const last = pts[pts.length-1];
+  ctx.beginPath();
+  ctx.arc(last.x, last.y, 3, 0, Math.PI*2);
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+// ── Order book ─────────────────────────────────────────────────────────────
+async function refreshOrderBook() {
+  try {
+    const data = await get(`/orderbook/${activeTicker}`);
+    document.getElementById('ob-ticker').textContent = activeTicker;
+    document.getElementById('spread-val').textContent = data.spread ? `₹${data.spread.toFixed(2)}` : '--';
+
+    const bids = data.bids || [];
+    const asks = data.asks || [];
+    const maxQ  = Math.max(...bids.map(b=>b.qty), ...asks.map(a=>a.qty), 1);
+
+    if (bids[0] && asks[0]) {
+      const mid = ((bids[0].price + asks[0].price) / 2).toFixed(2);
+      document.getElementById('mid-val').textContent = `₹${mid}`;
+    }
+
+    const askHTML = `
+      <div class="ob-col-header"><span>Price</span><span>Qty</span><span>Orders</span></div>
+      ${[...asks].reverse().map(a => `
+        <div class="ob-row ob-ask">
+          <div class="fill-bar" style="width:${(a.qty/maxQ*100).toFixed(0)}%"></div>
+          <span>₹${a.price.toFixed(2)}</span>
+          <span>${a.qty}</span>
+          <span style="color:var(--muted)">#${a.id}</span>
+        </div>`).join('')}`;
+
+    const bidHTML = `
+      ${bids.map(b => `
+        <div class="ob-row ob-bid">
+          <div class="fill-bar" style="width:${(b.qty/maxQ*100).toFixed(0)}%"></div>
+          <span>₹${b.price.toFixed(2)}</span>
+          <span>${b.qty}</span>
+          <span style="color:var(--muted)">#${b.id}</span>
+        </div>`).join('')}`;
+
+    document.getElementById('asks-section').innerHTML = askHTML;
+    document.getElementById('bids-section').innerHTML = bidHTML;
+  } catch(e) {}
+}
+
+// ── Portfolio ──────────────────────────────────────────────────────────────
+async function refreshPortfolio() {
+  try {
+    const data = await get('/portfolio');
+    cashBalance = data.cash;
+    document.getElementById('header-cash').textContent =
+      `₹ ${Math.round(data.cash).toLocaleString('en-IN')}`;
+
+    document.getElementById('port-stats').innerHTML = `
+      <div class="stat-box">
+        <div class="stat-label">Cash</div>
+        <div class="stat-val">₹${Math.round(data.cash).toLocaleString('en-IN')}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Total value</div>
+        <div class="stat-val">₹${Math.round(data.total_value).toLocaleString('en-IN')}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Realised P&L</div>
+        <div class="stat-val ${data.realised_pnl >= 0 ? 'up':'dn'}">
+          ${data.realised_pnl >= 0?'+':''}₹${data.realised_pnl.toFixed(2)}
+        </div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Trades</div>
+        <div class="stat-val">${data.trade_count}</div>
+      </div>`;
+
+    const holdings = Object.entries(data.holdings);
+    document.getElementById('holdings-list').innerHTML = holdings.length
+      ? holdings.map(([t,h]) => {
+          const cls  = h.pnl >= 0 ? 'up' : 'dn';
+          const sign = h.pnl >= 0 ? '+' : '';
+          return `<div class="holding-row">
+            <div>
+              <div class="holding-ticker">${t} <span style="color:var(--muted);font-weight:400">×${h.qty}</span></div>
+              <div class="holding-detail">avg ₹${h.avg_cost} · now ₹${h.current_price.toFixed(2)}</div>
+            </div>
+            <div class="holding-pnl">
+              <div class="${cls}">${sign}₹${h.pnl.toFixed(2)}</div>
+              <div class="${cls}" style="font-size:9px">${sign}${h.pnl_pct.toFixed(2)}%</div>
+            </div>
+          </div>`;
+        }).join('')
+      : `<div style="color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:8px 4px">No holdings — buy something</div>`;
+
+    updateSummary();
+  } catch(e) {}
+}
+
+// ── Trade log ──────────────────────────────────────────────────────────────
+async function refreshLog() {
+  try {
+    const data = await get('/trades');
+    const trades = data.trades || [];
+    if (trades.length === lastLogCount) return;
+    lastLogCount = trades.length;
+
+    document.getElementById('trade-log').innerHTML = [...trades].reverse().map((t,i) => {
+      const cls  = t.status==='PENDING' ? 'log-pending' : t.side==='BUY' ? 'log-buy' : 'log-sell';
+      const pnl  = t.pnl ? `  P&L: ${t.pnl>=0?'+':''}₹${t.pnl.toFixed(2)}` : '';
+      const newcls = i === 0 ? ' log-new' : '';
+      return `<div class="log-row ${cls}${newcls}">
+        <span>${t.status}</span>
+        <span>${t.side} ${t.qty}×${t.ticker} @ ₹${t.price.toFixed(2)}</span>
+        <span style="color:var(--muted)">${pnl}</span>
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+
+// ── Order form ─────────────────────────────────────────────────────────────
+function setTab(side) {
+  activeSide = side;
+  document.getElementById('tab-buy').classList.toggle('active', side==='BUY');
+  document.getElementById('tab-sell').classList.toggle('active', side==='SELL');
+  const btn = document.getElementById('btn-submit');
+  btn.className = `btn-order btn-${side.toLowerCase()}`;
+  btn.textContent = `${side} ${document.getElementById('order-ticker').value}`;
+  updateSummary();
+}
+
+function updateSummary() {
+  const ticker = document.getElementById('order-ticker').value;
+  const price  = parseFloat(document.getElementById('order-price').value) || 0;
+  const qty    = parseInt(document.getElementById('order-qty').value) || 0;
+  const btn    = document.getElementById('btn-submit');
+  btn.textContent = `${activeSide} ${ticker}`;
+
+  const usePrice = price > 0 ? price : (prices[ticker] || 0);
+  const cost     = usePrice * qty;
+  const after    = cashBalance - (activeSide === 'BUY' ? cost : -cost);
+
+  document.getElementById('sum-cost').textContent  = `₹${cost.toFixed(2)}`;
+  document.getElementById('sum-after').textContent = `₹${Math.max(0,after).toFixed(2)}`;
+}
+
+async function submitOrder() {
+  const ticker = document.getElementById('order-ticker').value;
+  const price  = parseFloat(document.getElementById('order-price').value) || 0;
+  const qty    = parseInt(document.getElementById('order-qty').value) || 1;
+  const toast  = document.getElementById('toast');
+  toast.className = 'toast';
+  toast.textContent = '';
+
+  try {
+    const r = await post('/order', { side: activeSide, ticker, price, qty });
+    toast.className = r.status === 'PENDING' ? 'toast pending' : 'toast success';
+    toast.textContent = r.message;
+    refreshAll();
+  } catch(e) {
+    toast.className = 'toast error';
+    toast.textContent = e.message;
+  }
+  setTimeout(() => { toast.className = 'toast'; }, 4000);
+}
+
+// ── Ticker select ──────────────────────────────────────────────────────────
+function selectTicker(t) {
+  activeTicker = t;
+  document.getElementById('order-ticker').value = t;
+  updateSummary();
+  refreshChart();
+  refreshOrderBook();
+  document.querySelectorAll('.ticker-item').forEach(el => {
+    el.classList.toggle('active', el.textContent.trim().startsWith(t));
+  });
+}
+
+// ── Refresh all ────────────────────────────────────────────────────────────
+function refreshAll() {
+  refreshTickers();
+  refreshChart();
+  refreshOrderBook();
+  refreshPortfolio();
+  refreshLog();
+}
+
+// ── Boot + auto-refresh ────────────────────────────────────────────────────
+refreshAll();
+setInterval(refreshAll, 2000);
+</script>
+</body>
+</html>

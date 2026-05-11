@@ -1,0 +1,23 @@
+to run u need to write "uvicorn main:app --reload"
+this will run oh, and u get info and uvicorn running
+write "venv\Scripts\activate"
+python -m uvicorn main:app --reload
+pip install fastapi uvicorn[standard] numpy scikit-learn
+"myenv\Scripts\activate"
+
+to run u want to have "cd trading
+uvicorn main:app --reload"
+
+this all in one terminal
+
+and in the next, terminal, u write python -m http.server 3000
+
+it running and now we can use the our own pretty ML to train and which to buy and not and it working
+ dynamically and it be so good to use and before that u should know how to run on frontend and all
+
+
+ now we would do ML part, new folder with all the things in ml
+ 
+
+pip install fastapi uvicorn[standard] python-dotenv requests pandas numpy sqlalchemy psycopg2-binary pydantic alembic httpx pytest black
+

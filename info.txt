@@ -1,0 +1,9 @@
+FinBERT — reads a sentence like "AAPL surges after record iPhone sales" and outputs POSITIVE 0.94. Pre-trained on 1.8M financial news articles. No training needed from you.
+
+LSTM — looks at your last 30 price ticks from the CircularBuffer and predicts the next 5. It's a tiny network — trains in seconds on CPU using your live price data.
+
+IsolationForest — learns what "normal" order book activity looks like, then flags anything that deviates. No labels needed — fully unsupervised.
+
+Signal Engine — scores all three outputs, weights them, and produces one clean BUY / SELL / HOLD with a confidence percentage
+
+

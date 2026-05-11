@@ -1,0 +1,16 @@
+to run u need to write "uvicorn main:app --reload"
+this will run oh, and u get info and uvicorn running
+
+
+to run u want to have "cd trading
+uvicorn main:app --reload"
+
+this all in one terminal
+
+and in the next, terminal, u write python -m http.server 3000
+
+# Terminal 1
+uvicorn main:app --reload
+
+# Terminal 2
+python -m http.server 3000
