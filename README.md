@@ -1,5 +1,7 @@
 TradeOS — DSA-Powered Stock Trading System with ML
 
+
+
 A full-stack algorithmic trading simulator built from scratch using core Data Structures and Algorithms (heaps, queues, hashmaps, circular buffers), combined with a Machine Learning layer for real-time signals.
 
 The system simulates a live order book for 4 tickers (AAPL, TSLA, GOOGL, INFY) — matching buy/sell orders, tracking portfolio P&L, detecting price anomalies, and generating BUY/SELL/HOLD signals — all served via a REST API with a terminal-styled trading dashboard UI.
