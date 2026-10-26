@@ -1,0 +1,167 @@
+{
+  "mode": "full",
+  "table": [
+    [
+      "Order-book throughput",
+      "96,471 orders/sec"
+    ],
+    [
+      "Order-book latency (median / p99)",
+      "5 us / 28 us"
+    ],
+    [
+      "Full order path (median / p99)",
+      "7 us / 43 us"
+    ],
+    [
+      "Anomaly detection precision",
+      "55.5%"
+    ],
+    [
+      "Anomaly detection recall",
+      "86.8%"
+    ],
+    [
+      "Anomaly detection F1",
+      "0.671"
+    ],
+    [
+      "False alarms on normal trades",
+      "5.0%"
+    ],
+    [
+      "News headlines indexed",
+      "4,753"
+    ],
+    [
+      "News search time (median)",
+      "33 ms"
+    ],
+    [
+      "Retrieved headlines on-topic (hybrid)",
+      "100%"
+    ],
+    [
+      "Retrieved headlines on-topic (semantic only)",
+      "98%"
+    ],
+    [
+      "Signal latency, with LSTM retrain",
+      "6.1 s"
+    ],
+    [
+      "Signal latency, models ready (median)",
+      "857 ms"
+    ],
+    [
+      "Real price history",
+      "2,514 days x 4 stocks (Yahoo Finance)"
+    ],
+    [
+      "Forecast test set (final held-out year)",
+      "1,428 tests, 28 stocks"
+    ],
+    [
+      "Forecast accuracy (Logistic)",
+      "51.7%"
+    ],
+    [
+      "Best naive baseline (always-UP / momentum)",
+      "51.5%"
+    ],
+    [
+      "95% interval, model minus baseline",
+      "[-0.4%, +0.7%]"
+    ],
+    [
+      "Balanced accuracy (50% = no skill)",
+      "50.2%"
+    ],
+    [
+      "Share of calls saying UP",
+      "99%"
+    ],
+    [
+      "LSTM walk-forward tests (4 stocks)",
+      "276"
+    ],
+    [
+      "LSTM directional accuracy",
+      "48.5%"
+    ],
+    [
+      "Linear model directional accuracy",
+      "55.1%"
+    ]
+  ],
+  "detail": {
+    "engine": {
+      "orders": 30000,
+      "orders_per_sec": 96471,
+      "trades": 22963,
+      "median_us": 5.2,
+      "p95_us": 14.9,
+      "p99_us": 28.1
+    },
+    "order_path": {
+      "orders": 10000,
+      "median_us": 6.7,
+      "p99_us": 43.2
+    },
+    "anomaly": {
+      "streams": 20,
+      "precision": 0.5546,
+      "recall": 0.8682,
+      "f1": 0.671,
+      "totals": {
+        "tp": 301,
+        "fp": 245,
+        "fn": 47,
+        "tn": 4607
+      },
+      "recall_by_type": {
+        "crash": 0.975,
+        "spike": 0.976,
+        "wide_spread": 0.784,
+        "huge_order": 0.741
+      },
+      "note": "synthetic stream, injected anomalies, first 40 trades excluded"
+    },
+    "rag": {
+      "indexed": 4753,
+      "median_ms": 32.7,
+      "p95_ms": 39.5,
+      "on_topic_hybrid": 1.0,
+      "on_topic_semantic_only": 0.981,
+      "queries": 20
+    },
+    "signal": {
+      "cold_s": 6.11,
+      "warm_median_ms": 857.5,
+      "warm_p95_ms": 958.4,
+      "model": "FinBERT"
+    },
+    "price_days": {
+      "AAPL": 2514,
+      "TSLA": 2514,
+      "GOOGL": 2514,
+      "INFY": 2514
+    },
+    "forecast_v2": {
+      "mode": "final",
+      "tests": 1428,
+      "best": "Logistic",
+      "accuracy": 0.5168,
+      "baseline": 0.5154,
+      "ci95": [
+        -0.0035,
+        0.007
+      ]
+    },
+    "forecast_lstm": {
+      "tests": 276,
+      "linear": 0.5507,
+      "lstm": 0.4855
+    }
+  }
+}

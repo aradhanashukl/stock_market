@@ -1,0 +1,71 @@
+{
+  "step_days": 10,
+  "horizon_days": 5,
+  "tests": 276,
+  "always_up": 0.5471,
+  "momentum": 0.5072,
+  "naive_mean_abs_error": 9.1164,
+  "luck_margin": 0.059,
+  "linear": {
+    "n": 276,
+    "accuracy": 0.5507,
+    "matrix": {
+      "tp": 85,
+      "fn": 66,
+      "fp": 58,
+      "tn": 67
+    },
+    "mean_abs_error": 11.7457,
+    "rmse": 20.2157,
+    "precision_up": 0.5944,
+    "recall_up": 0.5629,
+    "precision_down": 0.5038,
+    "recall_down": 0.536,
+    "balanced_accuracy": 0.5495,
+    "mcc": 0.0985,
+    "avg_return_after_up_pct": 0.7559,
+    "avg_return_after_down_pct": 0.2889
+  },
+  "lstm": {
+    "n": 276,
+    "accuracy": 0.4855,
+    "matrix": {
+      "tp": 65,
+      "fn": 86,
+      "fp": 56,
+      "tn": 69
+    },
+    "mean_abs_error": 14.5376,
+    "rmse": 23.9151,
+    "precision_up": 0.5372,
+    "recall_up": 0.4305,
+    "precision_down": 0.4452,
+    "recall_down": 0.552,
+    "balanced_accuracy": 0.4912,
+    "mcc": -0.0176,
+    "avg_return_after_up_pct": 0.1253,
+    "avg_return_after_down_pct": 0.8475
+  },
+  "per_ticker": {
+    "AAPL": {
+      "tests": 69,
+      "linear": 0.5652,
+      "lstm": 0.3478
+    },
+    "TSLA": {
+      "tests": 69,
+      "linear": 0.5507,
+      "lstm": 0.5942
+    },
+    "GOOGL": {
+      "tests": 69,
+      "linear": 0.5507,
+      "lstm": 0.4638
+    },
+    "INFY": {
+      "tests": 69,
+      "linear": 0.5362,
+      "lstm": 0.5362
+    }
+  }
+}
