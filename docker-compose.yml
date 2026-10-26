@@ -1,0 +1,14 @@
+services:
+  api:
+    build: .
+    image: tradeos
+    ports:
+      - "8000:8000"
+
+  frontend:
+    image: tradeos
+    command: python -m http.server 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api

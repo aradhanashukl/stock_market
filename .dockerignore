@@ -1,0 +1,5 @@
+venv/
+__pycache__/
+.env
+.git/
+news/analyst_ratings_processed.csv
